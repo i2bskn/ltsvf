@@ -9,21 +9,22 @@ import (
 	"github.com/codegangsta/cli"
 )
 
-func main() {
-	app := cli.NewApp()
-	app.Name = "ltsvf"
-	app.Version = "0.0.1"
-	app.Usage = "LTSV filter"
-	app.Author = "i2bskn"
-	app.Email = "i2bskn@gmail.com"
-	app.Flags = []cli.Flag {
-		cli.StringFlag{
-			Name: "filter, f",
-			Usage: "Filtering the value of specific key.",
-		},
+type Condition struct {
+	filters map[string]string
+}
+
+func newCondition(filters map[string]string) *Condition {
+	return &Condition{
+		filters: filters,
 	}
-	app.Action = mainAction
-	app.Run(os.Args)
+}
+
+func (condition *Condition) copiedFilters() map[string]string {
+	filters := make(map[string]string)
+	for key, value := range condition.filters {
+		filters[key] = value
+	}
+	return filters
 }
 
 func mainAction(c *cli.Context) {
@@ -38,28 +39,23 @@ func mainAction(c *cli.Context) {
 			}
 			defer file.Close()
 
-			scanner := bufio.NewScanner(file)
-			for scanner.Scan() {
-				line, filtering := parseLineOfLtsv(scanner.Text(), condition)
-				if filtering {
-					fmt.Println(line)
-				}
-			}
-			if err := scanner.Err(); err != nil {
-				fmt.Fprintln(os.Stderr, "reading standard input:", err)
-			}
+			filterAndDisplay(file, condition)
 		}
 	} else {
-		scanner := bufio.NewScanner(os.Stdin)
-		for scanner.Scan() {
-			line, filtering := parseLineOfLtsv(scanner.Text(), condition)
-			if filtering {
-				fmt.Println(line)
-			}
+		filterAndDisplay(os.Stdin, condition)
+	}
+}
+
+func filterAndDisplay(file *os.File, c *Condition) {
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line, filtering := parseLineOfLtsv(scanner.Text(), c)
+		if filtering {
+			fmt.Println(line)
 		}
-		if err := scanner.Err(); err != nil {
-			fmt.Fprintln(os.Stderr, "reading standard input:", err)
-		}
+	}
+	if err := scanner.Err(); err != nil {
+		fmt.Fprintln(os.Stderr, "reading standard input:", err)
 	}
 }
 
@@ -105,5 +101,22 @@ func parseLineOfLtsv(line string, c *Condition) (string, bool) {
 	} else {
 		return line, true
 	}
+}
+
+func main() {
+	app := cli.NewApp()
+	app.Name = "ltsvf"
+	app.Version = "0.0.1"
+	app.Usage = "LTSV filter"
+	app.Author = "i2bskn"
+	app.Email = "i2bskn@gmail.com"
+	app.Flags = []cli.Flag {
+		cli.StringFlag{
+			Name: "filter, f",
+			Usage: "Filtering the value of specific key.",
+		},
+	}
+	app.Action = mainAction
+	app.Run(os.Args)
 }
 
