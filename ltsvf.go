@@ -46,11 +46,23 @@ func mainAction(c *cli.Context) {
 	}
 }
 
+func parseFilter(arg string) map[string]string {
+	filters := make(map[string]string)
+	if len(arg) > 0 {
+		for _, filter_string := range strings.Split(arg, ",") {
+			filter := strings.SplitN(filter_string, ":", 2)
+			filters[filter[0]] = filter[1]
+		}
+	}
+
+	return filters
+}
+
 func filterAndDisplay(file *os.File, c *Condition) {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		line, filtering := parseLineOfLtsv(scanner.Text(), c)
-		if filtering {
+		line, passing := parseLineOfLtsv(scanner.Text(), c)
+		if passing {
 			fmt.Println(line)
 		}
 	}
@@ -59,48 +71,39 @@ func filterAndDisplay(file *os.File, c *Condition) {
 	}
 }
 
-func parseFilter(filters string) map[string]string {
-	parsed_filters := make(map[string]string)
-	if len(filters) == 0 {
-		return parsed_filters
-	}
-
-	for _, filter := range strings.Split(filters, ",") {
-		splited_filter := strings.SplitN(filter, ":", 2)
-		parsed_filters[splited_filter[0]] = splited_filter[1]
-	}
-	return parsed_filters
-}
-
-func parseLineOfLtsv(line string, c *Condition) (string, bool) {
-	if len(c.filters) == 0 {
-		return line, true
-	}
-
-	filters := c.copiedFilters()
-	for _, factor := range strings.Split(line, "\t") {
-		splited_factor := strings.SplitN(factor, ":", 2)
-		condition, exist := filters[splited_factor[0]]
-		if exist {
-			if splited_factor[1] == condition {
-				delete(filters, splited_factor[0])
+func parseLineOfLtsv(line string, c *Condition) (edited string, passing bool) {
+	if len(c.filters) > 0 {
+		filters := c.copiedFilters()
+		for _, factor_string := range strings.Split(line, "\t") {
+			factor := strings.SplitN(factor_string, ":", 2)
+			value, exist := filters[factor[0]]
+			if exist {
+				if factor[1] == value {
+					delete(filters, factor[0])
+				} else {
+					break
+				}
 			} else {
+				continue
+			}
+
+			if len(filters) == 0 {
 				break
 			}
+		}
+
+		if len(filters) > 0 {
+			edited = line
+			passing = false
 		} else {
-			continue
+			edited = line
+			passing = true
 		}
-
-		if len(filters) == 0 {
-			break
-		}
-	}
-
-	if len(filters) != 0 {
-		return line, false
 	} else {
-		return line, true
+		edited = line
+		passing = true
 	}
+	return
 }
 
 func main() {
