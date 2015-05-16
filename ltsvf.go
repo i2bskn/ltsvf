@@ -9,41 +9,38 @@ import (
 	"github.com/codegangsta/cli"
 )
 
-type Condition struct {
-	filters map[string]string
-}
-
-func newCondition(filters map[string]string) *Condition {
-	return &Condition{
-		filters: filters,
+func main() {
+	app := cli.NewApp()
+	app.Name = "ltsvf"
+	app.Version = "0.0.1"
+	app.Usage = "LTSV filter"
+	app.Author = "i2bskn"
+	app.Email = "i2bskn@gmail.com"
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:  "filter, f",
+			Usage: "Filtering the value of specific key.",
+		},
 	}
-}
+	app.Action = func(c *cli.Context) {
+		filters := parseFilter(c.String("filter"))
+		condition := newCondition(filters)
 
-func (condition *Condition) copiedFilters() map[string]string {
-	filters := make(map[string]string)
-	for key, value := range condition.filters {
-		filters[key] = value
-	}
-	return filters
-}
+		if len(c.Args()) > 0 {
+			for _, filename := range c.Args() {
+				file, err := os.Open(filename)
+				if err != nil {
+					panic(err)
+				}
+				defer file.Close()
 
-func mainAction(c *cli.Context) {
-	filters := parseFilter(c.String("filter"))
-	condition := newCondition(filters)
-
-	if len(c.Args()) > 0 {
-		for _, filename := range c.Args() {
-			file, err := os.Open(filename)
-			if err != nil {
-				panic(err)
+				filterAndDisplay(file, condition)
 			}
-			defer file.Close()
-
-			filterAndDisplay(file, condition)
+		} else {
+			filterAndDisplay(os.Stdin, condition)
 		}
-	} else {
-		filterAndDisplay(os.Stdin, condition)
 	}
+	app.Run(os.Args)
 }
 
 func parseFilter(arg string) map[string]string {
@@ -105,21 +102,3 @@ func parseLineOfLtsv(line string, c *Condition) (edited string, passing bool) {
 	}
 	return
 }
-
-func main() {
-	app := cli.NewApp()
-	app.Name = "ltsvf"
-	app.Version = "0.0.1"
-	app.Usage = "LTSV filter"
-	app.Author = "i2bskn"
-	app.Email = "i2bskn@gmail.com"
-	app.Flags = []cli.Flag {
-		cli.StringFlag{
-			Name: "filter, f",
-			Usage: "Filtering the value of specific key.",
-		},
-	}
-	app.Action = mainAction
-	app.Run(os.Args)
-}
-
