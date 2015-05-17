@@ -25,11 +25,15 @@ func main() {
 			Name:  "keys, k",
 			Usage: "Display only specified keys.",
 		},
+		cli.BoolFlag{
+			Name:  "concurrent, c",
+			Usage: "Concurrently processing for each files.",
+		},
 	}
 	app.Action = func(c *cli.Context) {
 		filters := parseFilter(c.String("filter"))
 		keys := parseKeys(c.String("keys"))
-		condition := newCondition(filters, keys)
+		condition := newCondition(filters, keys, c.Bool("concurrent"))
 
 		if len(c.Args()) > 0 {
 			for _, filename := range c.Args() {
@@ -39,7 +43,17 @@ func main() {
 				}
 				defer file.Close()
 
-				filterAndDisplay(file, condition)
+				if condition.concurrent {
+					go filterAndDisplay(file, condition)
+				} else {
+					filterAndDisplay(file, condition)
+				}
+			}
+
+			if condition.concurrent {
+				for i := 0; i < len(c.Args()); i++ {
+					<-condition.channel
+				}
 			}
 		} else {
 			filterAndDisplay(os.Stdin, condition)
@@ -79,6 +93,10 @@ func filterAndDisplay(file *os.File, c *Condition) {
 	}
 	if err := scanner.Err(); err != nil {
 		fmt.Fprintln(os.Stderr, "reading standard input:", err)
+	}
+
+	if c.concurrent {
+		c.channel <- 0
 	}
 }
 

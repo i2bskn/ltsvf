@@ -1,14 +1,18 @@
 package main
 
 type Condition struct {
-	filters map[string]string
-	keys    []string
+	filters    map[string]string
+	keys       []string
+	concurrent bool
+	channel    chan int
 }
 
-func newCondition(filters map[string]string, keys []string) *Condition {
+func newCondition(filters map[string]string, keys []string, concurrent bool) *Condition {
 	return &Condition{
-		filters: filters,
-		keys:    keys,
+		filters:    filters,
+		keys:       keys,
+		concurrent: concurrent,
+		channel:    make(chan int),
 	}
 }
 
