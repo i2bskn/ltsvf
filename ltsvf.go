@@ -65,8 +65,8 @@ func main() {
 func parseFilter(arg string) map[string]string {
 	filters := make(map[string]string)
 	if len(arg) > 0 {
-		for _, filter_string := range strings.Split(arg, ",") {
-			filter := strings.SplitN(filter_string, ":", 2)
+		for _, filterString := range strings.Split(arg, ",") {
+			filter := strings.SplitN(filterString, ":", 2)
 			filters[filter[0]] = filter[1]
 		}
 	}
@@ -103,13 +103,13 @@ func filterAndDisplay(file *os.File, c *Condition) {
 func parseLineOfLtsv(line string, c *Condition) (edited string, passing bool) {
 	if len(c.filters) > 0 {
 		filters := c.copiedFilters()
-		restricted_factor := make([]string, 0, 0)
+		restrictedFactor := make([]string, 0, 0)
 
-		for _, factor_string := range strings.Split(line, "\t") {
-			factor := strings.SplitN(factor_string, ":", 2)
+		for _, factorString := range strings.Split(line, "\t") {
+			factor := strings.SplitN(factorString, ":", 2)
 
 			if c.displayKey(factor[0]) {
-				restricted_factor = append(restricted_factor, factor_string)
+				restrictedFactor = append(restrictedFactor, factorString)
 			}
 
 			if value, exist := filters[factor[0]]; exist {
@@ -122,13 +122,13 @@ func parseLineOfLtsv(line string, c *Condition) (edited string, passing bool) {
 				continue
 			}
 
-			if len(filters) == 0 && len(c.keys) == len(restricted_factor) {
+			if len(filters) == 0 && len(c.keys) == len(restrictedFactor) {
 				break
 			}
 		}
 
 		if len(c.keys) > 0 {
-			edited = strings.Join(restricted_factor, "\t")
+			edited = strings.Join(restrictedFactor, "\t")
 		} else {
 			edited = line
 		}
@@ -140,15 +140,15 @@ func parseLineOfLtsv(line string, c *Condition) (edited string, passing bool) {
 		}
 	} else {
 		if len(c.keys) > 0 {
-			restricted_factor := make([]string, 0, 0)
-			for _, factor_string := range strings.Split(line, "\t") {
-				factor := strings.SplitN(factor_string, ":", 2)
+			restrictedFactor := make([]string, 0, 0)
+			for _, factorString := range strings.Split(line, "\t") {
+				factor := strings.SplitN(factorString, ":", 2)
 				if c.displayKey(factor[0]) {
-					restricted_factor = append(restricted_factor, factor_string)
+					restrictedFactor = append(restrictedFactor, factorString)
 				}
 			}
 
-			edited = strings.Join(restricted_factor, "\t")
+			edited = strings.Join(restrictedFactor, "\t")
 		} else {
 			edited = line
 		}

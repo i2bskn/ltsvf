@@ -1,5 +1,6 @@
 package main
 
+// Condition of filter
 type Condition struct {
 	filters    map[string]string
 	keys       []string
@@ -32,7 +33,6 @@ func (condition *Condition) displayKey(target string) bool {
 			}
 		}
 		return false
-	} else {
-		return true
 	}
+	return true
 }
